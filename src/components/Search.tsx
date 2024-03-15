@@ -41,13 +41,23 @@ const Search = ({ data }: Props) => {
   const [filter, setFilter] = useState(SEARCH_FILTERS[0]);
   const [query, setQuery] = useState("");
   const filteredData = useMemo(
-    () => data.filter(item => item[filter.code].toString().toLowerCase().includes(query.toLowerCase())),
+    () =>
+      data.filter(item => {
+        if (filter.code === "gender" && query) {
+          return item.gender.toLowerCase() === query.toLowerCase();
+        }
+
+        return item[filter.code].toString().toLowerCase().includes(query.toLowerCase());
+      }),
     [data, filter, query]
   );
 
   const handleChangeFilter = (i: number) => {
     setFilter(SEARCH_FILTERS[i]);
   };
+
+  const titleCase = (str: string) =>
+    str.split(" ").map(word => word.charAt(0).toUpperCase() + word.substring(1).toLowerCase());
 
   return (
     <div className="mx-5 my-3">
@@ -69,7 +79,7 @@ const Search = ({ data }: Props) => {
         </select>
       </div>
 
-      <table className="w-full">
+      <table className="w-full mb-3">
         <thead>
           <tr>
             <th className="text-left">ID</th>
@@ -85,12 +95,15 @@ const Search = ({ data }: Props) => {
             <tr key={data.id}>
               <td>{data.id}</td>
               {SEARCH_FILTERS.map(item => (
-                <td key={item.code}>{data[item.code]}</td>
+                <td key={item.code}>{item.code === "gender" ? titleCase(data[item.code]) : data[item.code]}</td>
               ))}
             </tr>
           ))}
         </tbody>
       </table>
+      <div className="text-right text-md font-bold">
+        {query.length > 0 && `${filteredData.length} ${filteredData.length > 1 ? "users" : "user"} found`}
+      </div>
     </div>
   );
 };
