@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-type Item = {
+type User = {
   id: number;
   firstName: string;
   maidenName: string;
@@ -13,14 +13,15 @@ type Item = {
 };
 
 type Filter = {
-  code: Exclude<keyof Item, "id">;
+  code: Exclude<keyof User, "id">;
   label: string;
 };
 
 type Props = {
-  data: Item[];
+  data: User[];
 };
 
+// An array of filters that will be used for searching.
 const SEARCH_FILTERS: Filter[] = [
   { code: "firstName", label: "First Name" },
   { code: "maidenName", label: "Maiden Name" },
@@ -30,30 +31,48 @@ const SEARCH_FILTERS: Filter[] = [
   { code: "email", label: "E-mail Address" }
 ];
 
-// Improvements
-// - Server-side fetching: Fetch data from API
+// Future improvements to consider:
+// - Server-side fetching and storing: Fetch data from API and store data to database
 // - Pagination: Paginate data to load the page faster
 // - Advanced Filtering: Allow more complex searching such as multiple fields
 // - Accessibility: Add support to screen readers and keyboard users
 // - Debouncing: Limiting the number of searches while typing
 
+/**
+ * Search component that provides real-time searching functionality.
+ * It allows users to search through a list of users based on various filters and a text query.
+ *
+ * @param {User[]} data - The array of `User` objects to be searched.
+ *
+ * @returns A JSX Element rendering:
+ * - A title indicating the purpose of the component.
+ * - An input field for entering the search query.
+ * - A dropdown select box for choosing the search filter.
+ * - A table displaying the search results.
+ * - A summary message showing the number of results found.
+ */
 const Search = ({ data }: Props) => {
-  const [filter, setFilter] = useState(SEARCH_FILTERS[0]);
+  // State for the selected search filter and search query text.
+  const [searchFilter, setSearchFilter] = useState(SEARCH_FILTERS[0]);
   const [query, setQuery] = useState("");
+
+  // Memoize filteredData to recompute only when data, query, or search filter changes.
   const filteredData = useMemo(
     () =>
-      data.filter(item => {
-        if (filter.code === "gender" && query) {
-          return item.gender.toLowerCase() === query.toLowerCase();
+      data.filter(user => {
+        if (searchFilter.code === "gender" && query) {
+          return user.gender.toLowerCase() === query.toLowerCase(); // Special case for gender to match exactly.
         }
 
-        return item[filter.code].toString().toLowerCase().includes(query.toLowerCase());
+        // Check if the user's property includes the query string (case-insensitive).
+        return user[searchFilter.code].toString().toLowerCase().includes(query.toLowerCase());
       }),
-    [data, filter, query]
+    [data, query, searchFilter.code]
   );
 
+  // Function to handle changing the search filter.
   const handleChangeFilter = (i: number) => {
-    setFilter(SEARCH_FILTERS[i]);
+    setSearchFilter(SEARCH_FILTERS[i]);
   };
 
   const titleCase = (str: string) =>
@@ -66,14 +85,14 @@ const Search = ({ data }: Props) => {
         <input
           className="px-2 border border-black"
           type="text"
-          placeholder={`Enter ${filter.label}`}
+          placeholder={`Enter ${searchFilter.label}`}
           onChange={e => setQuery(e.target.value)}
           value={query}
         />
         <select className="ml-2 text-black border border-black" onChange={e => handleChangeFilter(+e.target.value)}>
-          {SEARCH_FILTERS.map((item, i) => (
-            <option key={item.code} value={i}>
-              {item.label}
+          {SEARCH_FILTERS.map((filter, i) => (
+            <option key={filter.code} value={i}>
+              {filter.label}
             </option>
           ))}
         </select>
@@ -83,9 +102,10 @@ const Search = ({ data }: Props) => {
         <thead>
           <tr>
             <th className="text-left">ID</th>
-            {SEARCH_FILTERS.map(item => (
-              <th className="text-left" key={item.code} style={{ width: `${100 / (SEARCH_FILTERS.length + 1)}%` }}>
-                {item.label}
+            {SEARCH_FILTERS.map(filter => (
+              // Set each column width dynamically based on the number of filters + 1 for ID.
+              <th className="text-left" key={filter.code} style={{ width: `${100 / (SEARCH_FILTERS.length + 1)}%` }}>
+                {filter.label}
               </th>
             ))}
           </tr>
@@ -94,8 +114,8 @@ const Search = ({ data }: Props) => {
           {filteredData.map(data => (
             <tr key={data.id}>
               <td>{data.id}</td>
-              {SEARCH_FILTERS.map(item => (
-                <td key={item.code}>{item.code === "gender" ? titleCase(data[item.code]) : data[item.code]}</td>
+              {SEARCH_FILTERS.map(filter => (
+                <td key={filter.code}>{filter.code === "gender" ? titleCase(data[filter.code]) : data[filter.code]}</td>
               ))}
             </tr>
           ))}
